@@ -3,7 +3,6 @@ import cn.edu.hfut.dmic.webcollector.model.Page;
 import cn.edu.hfut.dmic.webcollector.net.HttpRequest;
 import cn.edu.hfut.dmic.webcollector.net.HttpResponse;
 import cn.edu.hfut.dmic.webcollector.plugin.berkeley.BreadthCrawler;
-import com.sleepycat.je.tree.IN;
 
 import java.text.DateFormat;
 import java.text.ParseException;
