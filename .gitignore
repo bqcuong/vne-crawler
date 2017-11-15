@@ -4,3 +4,5 @@ out/
 
 target/
 crawl-data/
+
+tokenizer.log
