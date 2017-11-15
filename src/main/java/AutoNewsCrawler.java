@@ -3,10 +3,16 @@ import cn.edu.hfut.dmic.webcollector.model.Page;
 import cn.edu.hfut.dmic.webcollector.net.HttpRequest;
 import cn.edu.hfut.dmic.webcollector.net.HttpResponse;
 import cn.edu.hfut.dmic.webcollector.plugin.berkeley.BreadthCrawler;
+import org.codehaus.jackson.JsonGenerator;
+import org.codehaus.jackson.map.ObjectMapper;
 
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -59,6 +65,7 @@ public class AutoNewsCrawler extends BreadthCrawler {
 
                 // TODO: get number of likes
                 // TODO: save to database or json
+                int[] fbInfos = getFbInfo(url);
 
                 System.out.println("url: " + url);
                 System.out.println("time: " + time);
@@ -66,6 +73,17 @@ public class AutoNewsCrawler extends BreadthCrawler {
                 System.out.println("description: " + description);
                 System.out.println("tags: " + tags);
                 System.out.println("comment count: " + commentCount);
+
+                System.out.println("fb_reaction_count: " + fbInfos[0]);
+                System.out.println("fb_comment_count: " + fbInfos[1]);
+                System.out.println("fb_share_count: " + fbInfos[2]);
+
+                News news = new News(url, time.toString(), title, description, tags, commentCount, fbInfos[0], fbInfos[1], fbInfos[2]);
+
+                ObjectMapper mapper = new ObjectMapper();
+                final String json2 = ",\n" + mapper.writeValueAsString(news);
+
+                Files.write(new File("news.json").toPath(), Arrays.asList(json2), StandardOpenOption.APPEND);
 
             }
             catch (ParseException e) {
@@ -98,6 +116,28 @@ public class AutoNewsCrawler extends BreadthCrawler {
         String textResponse = response.decode("utf-8");
         Matcher totalItemMatcher = TOTAL_ITEM_PATTERN.matcher(textResponse);
         return totalItemMatcher.find() ? Integer.parseInt(totalItemMatcher.group(1)) : 0;
+    }
+
+    public static String FACEBOOK_API = "https://graph.facebook.com/v2.11/?id=";
+    public static String TOKEN = "&fields=engagement&access_token=EAANgEIkLzvIBAOAHOV0zJ1oEbrSyuMVXrV4xfSecOvLZCVtJFjljKA5NptJYwoAeTb7wv9vDc5f8RiSvzXjM0YXQRuOxbRUHp7t9NjeZAqgBdzye1LXFdRtxgbFvVMQqnRxHhYsgZC9GM42GP4yQqQA5KLGZAomy1NZCtw3Yve4arH7jIppZA872G4MNoOfvrAgGhVjfGtjQZDZD";
+    public static int[] getFbInfo(String url) throws Exception
+    {
+        HttpRequest httpRequest = new HttpRequest(FACEBOOK_API + url + TOKEN);
+        HttpResponse response = httpRequest.response();
+        String textResponse = response.decode("utf-8");
+        Pattern r = Pattern.compile("(?s)\\d+");
+        Matcher matcher = r.matcher(textResponse);
+        if (matcher.find()) {
+            String reaction_count = matcher.group();
+            matcher.find();
+            String comment_count = matcher.group();
+            matcher.find();
+            String share_count = matcher.group();
+            return new int[]{Integer.parseInt(reaction_count),
+                Integer.parseInt(comment_count),
+                Integer.parseInt(share_count)};
+        }
+        return new int[] {0,0,0};
     }
 
     public static void main(String[] args) throws Exception {
