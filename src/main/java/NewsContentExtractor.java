@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 public class NewsContentExtractor {
 
     private static final VietnameseMaxentTagger vietnameseMaxentTagger = new VietnameseMaxentTagger();
-    private static final Pattern PROPER_NOUN = Pattern.compile("\\s(\\S+)/Np");
+    private static final Pattern PROPER_NOUN = Pattern.compile("\\b(\\S+)/Np");
 
     public static String[] tokenizeAndGetKeywords(String rawContent) throws Exception {
         rawContent = rawContent.replace("\n|\t", "");
