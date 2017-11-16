@@ -83,7 +83,7 @@ public class AutoNewsCrawler extends BreadthCrawler {
                 ObjectMapper mapper = new ObjectMapper();
                 final String json2 = ",\n" + mapper.writeValueAsString(news);
 
-                Files.write(new File("news.json").toPath(), Arrays.asList(json2), StandardOpenOption.APPEND);
+                Files.write(new File("phapluat_4.json").toPath(), Arrays.asList(json2), StandardOpenOption.APPEND);
 
             }
             catch (ParseException e) {
@@ -119,7 +119,7 @@ public class AutoNewsCrawler extends BreadthCrawler {
     }
 
     public static String FACEBOOK_API = "https://graph.facebook.com/v2.11/?id=";
-    public static String TOKEN = "&fields=engagement&access_token=EAANgEIkLzvIBAOAHOV0zJ1oEbrSyuMVXrV4xfSecOvLZCVtJFjljKA5NptJYwoAeTb7wv9vDc5f8RiSvzXjM0YXQRuOxbRUHp7t9NjeZAqgBdzye1LXFdRtxgbFvVMQqnRxHhYsgZC9GM42GP4yQqQA5KLGZAomy1NZCtw3Yve4arH7jIppZA872G4MNoOfvrAgGhVjfGtjQZDZD";
+    public static String TOKEN = "&fields=engagement&access_token=EAACEdEose0cBALu6ci0oX9gNRILxo6KENtiA8ckUQbyu0ngDLzRNmeVCX47s5z6axAZCAgFe4tLzteAgYdsnsZA4y5RfI1u1fyKT7dNZC1T8mZCZC4ZCo8pRvKo8k462uC1P3ahNdPgYZAuqwraYKtq4oWVRiZAkJfYmUcZAJ1W3eCB2hpO81m0vTTjl0sW7t3FMZD";
     public static int[] getFbInfo(String url) throws Exception
     {
         HttpRequest httpRequest = new HttpRequest(FACEBOOK_API + url + TOKEN);
@@ -147,9 +147,9 @@ public class AutoNewsCrawler extends BreadthCrawler {
                 "https://vnexpress.net/tin-tuc/phap-luat"
         };
 
-        AutoNewsCrawler crawler = new AutoNewsCrawler(categoryUrls[0], "crawl-data", true);
+        AutoNewsCrawler crawler = new AutoNewsCrawler(categoryUrls[4], "crawl-data", true);
 
-        crawler.start(5);
+        crawler.start(10);
         crawler.setThreads(50);
         crawler.getConf().setTopN(100);
         crawler.getConf().setWaitThreadEndTime(1000);

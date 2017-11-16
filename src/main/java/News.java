@@ -15,6 +15,8 @@ public class News {
     public int fb_comment_count;
     public int fb_share_count;
 
+    public News(){}
+
     public News(String url, String time, String title, String description, List<String> tags, int comment_count, int fb_reaction_count, int fb_comment_count, int fb_share_count) {
         this.url = url;
         this.time = time;
