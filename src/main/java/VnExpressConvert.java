@@ -1,20 +1,70 @@
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.type.TypeReference;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.OutputStream;
+import java.io.*;
 import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class VnExpressConvert {
     public static void main(String[] args) throws Exception {
-        VnExpressConvert("phapluat_4.json", "phapluat_formated_4.json");
+//        VnExpressConvert("hieu_tuoitrevn.json", "tuoitrevn_formated.json");
+        NormalConvert("dantri_in/dantri_news_xae.json",
+                "dantri_news_xae_formated.json");
+//        AddArr("dantri_in/dantri_news_xae.json");
+    }
+
+
+    public static void AddArr(String path) throws Exception {
+        File f1 = new File(path);
+        String line;
+        List<String> lines = new ArrayList<>();
+        FileReader fr = new FileReader(f1);
+        BufferedReader br = new BufferedReader(fr);
+        while ((line = br.readLine()) != null) {
+//            if (line.contains("\"tags"))
+            line = convertTag1(line);
+            lines.add(line);
+        }
+        fr.close();
+        br.close();
+
+        FileWriter fw = new FileWriter(f1);
+        BufferedWriter out = new BufferedWriter(fw);
+        for(String s : lines)
+            out.write(s);
+        out.flush();
+    }
+    //{"description": "MC ", "comment_count": 44, "time": "14/11/2017 13:22", "like_count": 4399,
+    // "tags": "r\u01a1i m\u00e1y bay Mi171, mc phan anh", "url": "http://vietnamnet.vn/vn/thoi-su/clip-nong/mc-phan-anh-trao-tay-gia-cho-chien-si-song-sot-vu-roi-may-bay-mi171-410834.html", "title": "MC Phan Anh trao tay gi\u1ea3 cho chi\u1ebfn s\u0129 s\u1ed1ng s\u00f3t v\u1ee5 r\u01a1i m\u00e1y bay Mi171", "share_count": 25},
+
+
+    public static String convertTag1(String input) {
+        String pattern1 = "\"tags\":";
+//        String pattern2 = "\"like_count\":";
+        String pattern2 = "\"time\":";
+
+        Pattern p = Pattern.compile(Pattern.quote(pattern1) + "(.*?)" + Pattern.quote(pattern2));
+        Matcher m = p.matcher(input);
+        while (m.find()) {
+//            System.out.println(m.group());
+            String content = m.group(1).trim();
+            content = content.replaceAll("^\\s*\"", "").replaceAll("\",$", "");
+            String[] strs = content.split(",");
+            List<String> tags = new ArrayList<String>();
+            for(String str : strs) {
+                tags.add("\"" + str.trim() + "\"");
+            }
+            String replace = "\"tags\":" + tags + "," + pattern2;
+            input = input.replace(m.group(), replace);
+        }
+        return input;
     }
 
     public static void VnExpressConvert(String pathIn, String pathOut) throws Exception{
@@ -28,8 +78,54 @@ public class VnExpressConvert {
                 objectMapper.readValue(jsonData, new TypeReference<List<News>>(){});
         List<NewsFormated> re = new ArrayList<NewsFormated>();
         for (News news_1 : news){
+            DateFormat df = new SimpleDateFormat("EEE MMM dd kk:mm:ss z yyyy", Locale.ENGLISH);
+            Date result =  df.parse(news_1.time);
+            SimpleDateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+
             String[] tokenizeds = NewsContentExtractor.tokenizeAndGetKeywords(
                     news_1.title + ". " + news_1.description);
+            List<String> listTokenizes = Arrays.asList(tokenizeds);
+//            listTokenizes.remove(0);
+            NewsFormated newsFormated = new NewsFormated(
+                    news_1.url,
+                    dateFormat.format(result),
+                    news_1.title,
+                    news_1.description,
+                    news_1.tags,
+                    news_1.fb_reaction_count,
+                    news_1.fb_comment_count,
+                    news_1.fb_share_count,
+                    listTokenizes.subList(1, listTokenizes.size()),
+                    tokenizeds[0]
+
+            );
+            re.add(newsFormated);
+        }
+        final OutputStream out = new ByteArrayOutputStream();
+        final ObjectMapper mapper = new ObjectMapper();
+
+        mapper.writeValue(out, re);
+
+        Files.write(new File(pathOut).toPath(), out.toString().getBytes());
+
+//        List<News> myObjects = objectMapper.readValue(jsonInput, new TypeReference<List<MyClass>>(){});
+    }
+
+    public static void NormalConvert(String pathIn, String pathOut) throws Exception{
+        byte[] jsonData = Files.readAllBytes(Paths.get(pathIn));
+
+        //create ObjectMapper instance
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        //convert json string to object
+        List<NewsFormated> news =
+                objectMapper.readValue(jsonData, new TypeReference<List<NewsFormated>>(){});
+        List<NewsFormated> re = new ArrayList<NewsFormated>();
+        for (NewsFormated news_1 : news){
+            String[] tokenizeds = NewsContentExtractor.tokenizeAndGetKeywords(
+                    news_1.title + ". " + news_1.description);
+            if (tokenizeds.length < 2)
+                continue;
             List<String> listTokenizes = Arrays.asList(tokenizeds);
 //            listTokenizes.remove(0);
             NewsFormated newsFormated = new NewsFormated(
@@ -38,9 +134,9 @@ public class VnExpressConvert {
                     news_1.title,
                     news_1.description,
                     news_1.tags,
-                    news_1.fb_reaction_count,
-                    news_1.fb_comment_count,
-                    news_1.fb_share_count,
+                    news_1.like_count,
+                    news_1.comment_count,
+                    news_1.share_count,
                     listTokenizes.subList(1, listTokenizes.size()),
                     tokenizeds[0]
 

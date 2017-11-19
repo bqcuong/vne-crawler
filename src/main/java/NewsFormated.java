@@ -13,6 +13,7 @@ public class NewsFormated {
 
     public List<String> tokenized_tags;
     public String tokenized_content;
+    public NewsFormated() {}
 
     public NewsFormated(String url, String time, String title, String description,
                         List<String> tags, int reaction_count, int comment_count,
