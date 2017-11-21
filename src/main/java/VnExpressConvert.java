@@ -1,5 +1,11 @@
+import org.apache.avro.data.Json;
+import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.annotate.JsonSerialize;
 import org.codehaus.jackson.type.TypeReference;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 
 import java.io.*;
 import java.lang.reflect.Array;
@@ -12,12 +18,15 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.codehaus.jackson.map.annotate.JsonSerialize.Inclusion.NON_NULL;
+
 public class VnExpressConvert {
     public static void main(String[] args) throws Exception {
 //        VnExpressConvert("hieu_tuoitrevn.json", "tuoitrevn_formated.json");
-        NormalConvert("dantri_in/dantri_news_xae.json",
-                "dantri_news_xae_formated.json");
-//        AddArr("dantri_in/dantri_news_xae.json");
+//        NormalConvert("test24h.json",
+//                "test24h_formated.json");
+//        AddArr("dantri_news.json");
+        convertWithEmptyTags("dantri_news.json", "dantri_news_formated.json");
     }
 
 
@@ -48,7 +57,7 @@ public class VnExpressConvert {
     public static String convertTag1(String input) {
         String pattern1 = "\"tags\":";
 //        String pattern2 = "\"like_count\":";
-        String pattern2 = "\"time\":";
+        String pattern2 = "\"comment_count\":";
 
         Pattern p = Pattern.compile(Pattern.quote(pattern1) + "(.*?)" + Pattern.quote(pattern2));
         Matcher m = p.matcher(input);
@@ -72,6 +81,9 @@ public class VnExpressConvert {
 
         //create ObjectMapper instance
         ObjectMapper objectMapper = new ObjectMapper();
+//        objectMapper.setSerializationInclusion(JsonSerialize.Inclusion.NON_EMPTY);
+//        objectMapper.configure(DeserializationConfig.Feature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true);
+        objectMapper.getDeserializationConfig().with(DeserializationConfig.Feature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT);
 
         //convert json string to object
         List<News> news =
@@ -111,6 +123,59 @@ public class VnExpressConvert {
 //        List<News> myObjects = objectMapper.readValue(jsonInput, new TypeReference<List<MyClass>>(){});
     }
 
+    public static void convertWithEmptyTags(String pathIn, String pathOut) throws Exception {
+        List<NewsFormated> re = new ArrayList<>();
+        String content = new String(Files.readAllBytes(Paths.get(pathIn)));
+        JSONParser parser = new JSONParser();
+        JSONArray arrJson = (JSONArray)parser.parse(content);
+        for (int i = 0; i < arrJson.size(); i++) {
+            if (i % 100 == 0)
+                System.out.println(i + "\n");
+            JSONObject jsonObjectRow = (JSONObject) arrJson.get(i);
+            String url = (String) jsonObjectRow.get("url");
+            String time = (String) jsonObjectRow.get("time");
+            String title = (String) jsonObjectRow.get("title");
+
+            NewsFormated temp = new NewsFormated(url, time);
+            if (re.contains(temp))
+                continue;
+            String description = (String) jsonObjectRow.get("description");
+            String tags = (String) jsonObjectRow.get("tags");
+            long like_count = (long) jsonObjectRow.get("like_count");
+            long comment_count = (long) jsonObjectRow.get("comment_count");
+            long share_count = (long) jsonObjectRow.get("share_count");
+            String[] tagsNew = tags.split(",");
+
+            String[] tokenizeds = NewsContentExtractor.tokenizeAndGetKeywords(
+                    title + ". " + description);
+            if (tokenizeds.length < 2)
+                continue;
+            List<String> listTokenizes = Arrays.asList(tokenizeds);
+            NewsFormated newsFormated = new NewsFormated(
+                    url,
+                    time,
+                    title,
+                    description,
+                    Arrays.asList(tagsNew),
+                    (int)like_count,
+                    (int)comment_count,
+                    (int)share_count,
+                    listTokenizes.subList(1, listTokenizes.size()),
+                    tokenizeds[0]
+            );
+            re.add(newsFormated);
+        }
+
+//        return re;
+
+        final OutputStream out = new ByteArrayOutputStream();
+        final ObjectMapper mapper = new ObjectMapper();
+
+        mapper.writeValue(out, re);
+
+        Files.write(new File(pathOut).toPath(), out.toString().getBytes());
+    }
+
     public static void NormalConvert(String pathIn, String pathOut) throws Exception{
         byte[] jsonData = Files.readAllBytes(Paths.get(pathIn));
 
@@ -139,7 +204,6 @@ public class VnExpressConvert {
                     news_1.share_count,
                     listTokenizes.subList(1, listTokenizes.size()),
                     tokenizeds[0]
-
             );
             re.add(newsFormated);
         }

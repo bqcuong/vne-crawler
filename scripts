@@ -1,0 +1,4 @@
+curl -XPOST '112.137.131.9:9200/twitter/tweet/_delete_by_query?conflicts=proceed&pretty' -d'{"query": {"match_all": {}}}'
+
+
+curl -s -H "Content-Type: application/json" -XPOST 'http://112.137.131.9:9200/newspaper/vnexpress/_bulk' --data-binary @request-data.txt
